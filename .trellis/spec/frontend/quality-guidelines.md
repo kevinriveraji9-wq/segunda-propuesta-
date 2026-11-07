@@ -1,49 +1,39 @@
 # Quality Guidelines
 
-## Automated gates (must pass before reporting done)
+## Visual system (restrained retail)
 
-```bash
-S=~/.claude/skills/design-taste-frontend
-node $S/scripts/lint.mjs index.html css js          # 0 FAIL, 0 WARN
-node $S/scripts/inspect.mjs http://localhost:5173  # 0 FAIL
-```
+- Tokens only: `--blanco`, `--gris`, `--gris-hondo`, `--linea`, `--tinta`, `--tinta-suave`, `--apagado`, `--acento` (wine, badges/sale/active), `--wa` (WhatsApp actions only), `--sombra` (overlays only).
+- Font: Archivo variable, one family in two widths: condensed uppercase for display/section titles, normal width for UI.
+- Square corners everywhere except the round floating WhatsApp button and colour dots.
+- 1px `--linea` separators are allowed in filters, footer columns and accordions.
+- Shadows only on overlays: dialogs, nav panel, floating button and its menu.
+- No gradients, glass/backdrop blur, emoji, monospace.
 
-Accepted WARN: `no-footage`. No honest open-licence clip of the shop or Pitalito exists (searched "shoes"; only unrelated clips). Re-check if the client supplies video.
-A line that must keep a flagged pattern (masks for paper edges, the floating WhatsApp shadow, the dialog shadow, the visually-hidden helper) carries `/* taste-skill-ignore */` with a reason.
+## Accessibility (impeccable polish checklist)
 
-## Forbidden patterns (design-taste-frontend house rules)
+- Text contrast at least 4.5:1 (secondary text 7.4:1, accent 9.1:1, WhatsApp green 6.5:1 on white); input borders at least 3:1.
+- Visible `:focus-visible` (white outline on dark areas); touch targets at least 44px.
+- Native `<dialog>` for overlays; Escape closes; focus returns to the opener.
+- `aria-live` on result counts; no `aria-haspopup` on plain hover panels.
+- `prefers-reduced-motion`: announcement bar does not rotate, transitions shortened.
 
-- Eyebrow/kicker labels above headings; tiny uppercase letter-spaced labels
-- Thin rules, hairline dividers, 1px outlined boxes (dotted 4-5px perforations/leaders are allowed)
-- Gradients as visible fills (masks that cut paper edges are allowed, with the ignore comment)
-- Shadows on things at rest (only `.wa-flota` and `<dialog>` float)
-- Emoji, monospace, 01/02/03 numbering, glass/backdrop blur, rows of identical cards
-- Cream/sand page grounds; fonts from the impeccable reflex-reject list (Fraunces, Inter, DM Sans, Playfair, ...)
-- Styled accent word inside a headline; headlines over two lines at 390/768/1440px
+## Business-fact guard
 
-## Required patterns
+Never publish unconfirmed specifics: shipping thresholds or prices, "a todo Colombia", payment brands (Nequi, PSE, Addi...), return-day counts, warranties, address, hours, NIT. Neutral "consulta por WhatsApp" wording lives in `TIENDA` until the owner confirms the real terms.
 
-- Tokens only (`--kraft`, `--etiqueta`, `--tinta`, `--accion`, ... in OKLCH); five type steps `--paso-chico|texto|guia|titulo|gigante` (plus the footer wordmark)
-- Rokkitt 800 uppercase for display; Literata for text; body at least 16px; running text in full ink
-- Touch targets at least 44px; visible `:focus-visible`; `aria-live` on the talla result; visually hidden labels on every input
-- Motion: transform/opacity via WAAPI `subir()`, content visible by default (no class-gated reveals), `prefers-reduced-motion` respected
-- Every found picture credited on the page and in `assets/credits.json`; never presented as the shop's own product
-- Empty state with a WhatsApp fallback when filters return nothing
+## Design gates (advisory for this direction)
 
-## Testing requirements
+`lint.mjs` / `inspect.mjs` from design-taste-frontend. Accepted findings: `hairline`, `outlined-box`, `few-pictures` (no photos until the owner supplies product photos), `still-page` (minimal motion by design), `no-footage`, `side-scroll` on the type-pill row at 390px. Anything else must be fixed.
 
-No test runner. Manual checks in the browser at 1440 / 768 / 390:
-talla filter counts, search across categories, empty state, dialog open/close, coupon validation focus + WhatsApp text, console clean.
+## Common mistakes
 
-## Code review checklist
+- `aria-label` on a plain `div`/`span` needs a role (`group`, `img`).
+- Spanish lists: "a, b y c", never "a y b y c".
+- Facet counts must include filters that persist across category switches (size).
+- Numeric inputs need an integer check, not only a range check.
+- Prefilled fields must not keep a value from a previously opened product.
+- Heading levels inside nested sections (related products under an h3 use h4).
 
-- [ ] Catalog content only changed in `productos.js`
-- [ ] Both gates re-run after the change
-- [ ] Screenshots in `.taste-skill/inspect/` looked at, not just the meter
-- [ ] Spanish copy: sentence case, no invented reviews, and no prices or business facts presented as confirmed
+## Testing
 
-## Common mistakes (found by trellis-check, task 11-07-catalogo-web)
-
-- `aria-label` on a plain `div`/`span` is ignored by screen readers. Give it a role: `role="group"` for the type chips and the receipt slip, `role="img"` for the colour dots.
-- Comma-joining lists in Spanish copy: "a, b y c", never "a y b y c".
-- Validating presence only: numeric inputs also need a range check when the form uses `novalidate`.
+No test runner. Manual or scripted browser checks at 1440 / 768 / 390 for the flows listed in the index Quality Check.

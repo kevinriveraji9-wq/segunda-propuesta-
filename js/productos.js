@@ -5,14 +5,24 @@
    - nombre:   nombre del zapato
    - categoria: "dama" | "caballero" | "nino" | "nina"
    - tipo:     subcategoría (Tacones, Tenis, Botas, ...)
-   - precio:   en pesos, sin puntos (129900 = $129.900)
-   - tallas:   rango de tallas
+   - precio:   en pesos, sin puntos (129900 = $ 129.900)
+   - precioAntes: (opcional) precio anterior, sin puntos. Solo si
+               hay un descuento real: si es mayor que "precio" se
+               muestra tachado, con el porcentaje de descuento.
+   - tallas:   rango de tallas, ej. "35 – 40"
    - colores:  colores disponibles (código de color)
    - imagen:   ruta de la foto, ej. "img/dama/D01.jpg".
                Si se deja vacío "" se muestra una ilustración.
    - nuevo:    true para mostrar la etiqueta "Nuevo"
    ========================================================= */
 
+/* ---------------------------------------------------------
+   DATOS DE LA TIENDA
+   Todo lo que diga la página sobre envíos, cambios, pagos,
+   dirección u horario sale de aquí. Cambia los textos por las
+   condiciones reales de la tienda. Los campos vacíos "" no se
+   muestran en la página.
+   --------------------------------------------------------- */
 const TIENDA = {
   nombre: "Calzado Leidy Carolina",
   ciudad: "Pitalito, Huila",
@@ -21,6 +31,36 @@ const TIENDA = {
   facebook: "https://www.facebook.com/share/19vXXxZTyL/",
   instagram: "https://www.instagram.com/calzadoleidy",
   tiktok: "https://www.tiktok.com/@leidycarolinashoes",
+
+  // EDITAR: datos de contacto. Se muestran en el pie solo si tienen texto.
+  direccion: "",   // Ej: "Calle 0 # 0-00, centro"
+  telefono: "",    // Ej: "(608) 000 0000"
+  horario: "",     // Ej: "Lunes a sábado, 8:00 a. m. a 7:00 p. m."
+  nit: "",         // Ej: "000.000.000-0"
+
+  // Barra de avisos arriba de la página (hasta 3 mensajes que se turnan).
+  // También se acepta un solo texto en "anuncio".
+  anuncios: [
+    "Pide por WhatsApp y te confirmamos talla y color",
+    "¿No encuentras tu talla? Escríbenos y te ayudamos",
+    "Precios en pesos colombianos, sujetos a disponibilidad",
+  ],
+
+  // EDITAR: franja de servicio (4 puntos). Mientras no haya condiciones
+  // confirmadas, los textos invitan a preguntar y no prometen nada.
+  servicios: [
+    { titulo: "Envíos", texto: "Consulta por WhatsApp el costo y el tiempo de entrega a tu ciudad." },
+    { titulo: "Cambios de talla", texto: "Pregunta las condiciones antes de comprar." },
+    { titulo: "Medios de pago", texto: "Te contamos las opciones por WhatsApp." },
+    { titulo: "Atención por WhatsApp", texto: "Te confirmamos talla, color y disponibilidad." },
+  ],
+
+  // EDITAR: políticas que se ven en la ficha del producto y en "Ayuda".
+  politicas: {
+    envios: "Consulta por WhatsApp si llegamos a tu ciudad, cuánto cuesta el envío y cuánto tarda.",
+    cambios: "Antes de comprar te contamos las condiciones para cambiar la talla o el modelo.",
+    pagos: "Te contamos por WhatsApp los medios de pago disponibles.",
+  },
 };
 
 const CATEGORIAS = [

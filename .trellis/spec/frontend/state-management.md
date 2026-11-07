@@ -1,47 +1,31 @@
 # State Management
 
-One plain object in `js/app.js`:
-
 ```js
-const estado = { cat: "dama", tipo: "Todos", talla: null, q: "" };
+const estado = { cat: "dama", tipo: "Todo", talla: null, precio: null, orden: "relevancia", q: "" };
 ```
 
-- `cat`: active category id; initialised from `location.hash` (`#dama`, `#caballero`, `#nino`, `#nina`) and written back with `history.replaceState`.
-- `tipo`: chip filter inside the category (`"Todos"` or a product `tipo`).
-- `talla`: integer 15 to 46 or `null`; filters rows with `leQueda(p, talla)` and is carried into every WhatsApp message and the coupon.
-- `q`: free-text search; when non-empty it searches **all** categories (accent-insensitive via `sinTildes`) and groups results as `Categoria · Tipo`.
+- `cat`: `"dama" | "caballero" | "nino" | "nina" | "todas"`; synced with `location.hash` (`#nuevos` sets `cat: "todas", tipo: "Nuevos"`).
+- `tipo`: `"Todo" | "Nuevos" |` a product `tipo`. The active type is always listed in the pills even if the current search would hide it.
+- `talla`: integer or `null`; persists across category switches, so **facet counts must include it** (a category with 0 models in that size is shown disabled).
+- `precio`: index of a price band computed from the data, or `null`.
+- `orden`: `relevancia | precio-asc | precio-desc | nuevos`.
+- `q`: accent-insensitive search (`sinTildes`) across all categories.
 
 ## Rendering
 
-Render functions rebuild their region from `estado` with template strings: `pintarPestanas()`, `pintarTipos()`, `pintarLista()`, `pintar()` (all three). Event handling is a single delegated `click` listener on `document` keyed by `data-cat`, `data-ir`, `data-tipo`, `data-abrir`.
+`pintar()` calls `pintarFiltros()` + `pintarLista()`; `pintarCajon(id)` renders the drawer level. Each re-rendered zone carries `data-region`; the focused control is restored after a re-render so keyboard users keep their place. One delegated `click` listener handles `data-*` actions.
 
-Never store state in the DOM or in `localStorage`; nothing must persist between visits.
+## Quick-order form contract (`#formPedido`, `novalidate`)
 
-## Observers and re-renders (learned in task 11-07-catalogo-web)
+| Field | Rule |
+|---|---|
+| `nombre` | required |
+| `modelo` | required; prefilled with "Nombre (Ref. X)" when a product dialog is opened |
+| `talla` | required, `Number.isInteger` and 15 to 46; prefilled with the chosen size or cleared (never kept from another product) |
+| `nota` | optional |
 
-`pintarLista()` replaces the whole `#lista` subtree, so every observer that watched old rows must be released first:
+Errors list the missing fields as "a, b y c", set `aria-invalid` and focus the first invalid field. Success opens `linkWA(texto)` in a new tab.
 
-- `vigilarFilas()` calls `ioFilas.disconnect()` before observing the new rows (row entrance motion).
-- `vigilarGrupos()` disconnects `ioGrupos` and re-observes each `.grupo` (pinned type readout).
-- Empty result: clear `#catTipo` and disconnect `ioGrupos`, otherwise the big heading keeps a stale type.
+## Product order message
 
-Wrong: observing new rows on every render without `disconnect()` (detached nodes stay referenced).
-Correct: `observer.disconnect()` then observe the freshly rendered nodes.
-
-## Derived copy
-
-Facts shown in the hero label are computed from the data on load, never typed by hand:
-`#datoModelos` = `PRODUCTOS.length` + " modelos con precio"; `#datoTallas` = min/max of all `tallas`.
-The HTML keeps the same text as the no-JS fallback.
-
-## Coupon contract (`#formCupon`, `novalidate`)
-
-| Field | Rule | Error text (Spanish) |
-|---|---|---|
-| `nombre` | required | joined list: "Falta tu nombre, el modelo o la referencia y la talla." |
-| `modelo` | required | (same list, first missing field gets focus) |
-| `talla` | required, integer 15 to 46 | "Escribe una talla entre 15 y 46." |
-| `nota` | optional | none |
-
-On success: `window.open(linkWA(texto), "_blank", "noopener")` with
-`Hola, Calzado Leidy Carolina. Soy <nombre>.\nQuiero pedir: <modelo>\nTalla: <talla>[\nNota: <nota>]`.
+`msgPedido(p, talla, color)` requires a size; without one the dialog shows "Elige tu talla para pedir por WhatsApp." and focuses the first size button.

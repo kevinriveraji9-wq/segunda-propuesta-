@@ -1,8 +1,13 @@
 (() => {
-  const $ = (s) => document.querySelector(s);
-  const pesos = (n) => "$" + n.toLocaleString("es-CO");
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const pesos = (n) => "$ " + n.toLocaleString("es-CO");
   const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const listaY = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} y ${xs.at(-1)}` : xs[0] || "");
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
   const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const desplazar = (el) => el.scrollIntoView({ behavior: reducido ? "auto" : "smooth", block: "start" });
 
   /* ---------- Ilustraciones (mientras no haya foto del producto) ---------- */
   const FORMA = {
@@ -39,9 +44,22 @@
       <path d="M28 104h172q6 0 6 6 0 6-8 6H32q-6 0-6-6t2-6z" fill="#2a2420"/>
       <rect x="28" y="104" width="30" height="16" rx="3" fill="#2a2420"/>`,
   };
-  const dibujo = (p) => p.imagen
-    ? `<img src="${p.imagen}" alt="${p.nombre}" loading="lazy">`
-    : `<svg viewBox="0 0 230 140" aria-hidden="true"><ellipse cx="116" cy="124" rx="92" ry="6" fill="#000" fill-opacity=".07"/>${SVGS[FORMA[p.tipo] || "bajo"](p.colores[0])}</svg>`;
+  // decorativo: la imagen va junto al nombre del producto, así que no se repite en el lector de pantalla
+  const dibujo = (p, decorativo = false, color = p.colores[0]) => p.imagen
+    ? `<img src="${esc(p.imagen)}" alt="${decorativo ? "" : esc(p.nombre)}" loading="lazy">`
+    : `<svg viewBox="0 0 230 140" aria-hidden="true"><ellipse cx="116" cy="124" rx="92" ry="6" fill="#000" fill-opacity=".07"/>${SVGS[FORMA[p.tipo] || "bajo"](color)}</svg>`;
+
+  /* ---------- Colores con nombre (un código desconocido se llama "Color N") ---------- */
+  const COLOR_NOMBRES = {
+    "#1d1a1a": "Negro", "#a3233a": "Vino", "#d9b49a": "Nude", "#7b4b33": "Café", "#3c3a3a": "Gris oscuro",
+    "#c79a3b": "Dorado", "#b9b9b9": "Plateado", "#2b2f45": "Azul oscuro", "#c98a5c": "Camel", "#f1e6d6": "Crema",
+    "#efe4d2": "Beige", "#8a5a3b": "Miel", "#f4f1ec": "Blanco", "#e7b7b4": "Rosa palo", "#e7a3b0": "Rosado",
+    "#9aa7c7": "Azul claro", "#5d7a6a": "Verde", "#6e4630": "Café", "#3a2a22": "Café oscuro", "#8b6a4f": "Tabaco",
+    "#b07a4f": "Caramelo", "#b88a52": "Ocre", "#c2553a": "Terracota", "#8d9196": "Gris", "#3d5a80": "Azul",
+    "#5a3523": "Chocolate", "#6b6a4f": "Verde oliva", "#a86a3d": "Coñac", "#c3b3d9": "Lila", "#f2c6c2": "Rosa claro",
+  };
+  const nombreColor = (hex, i) => COLOR_NOMBRES[String(hex).toLowerCase()] || `Color ${i + 1}`;
+  const nombresColores = (p) => p.colores.map(nombreColor);
 
   /* ---------- Tallas ---------- */
   const rango = (p) => {
@@ -50,322 +68,678 @@
   };
   const leQueda = (p, t) => { const [a, b] = rango(p); return t >= a && t <= b; };
   const tallasTexto = (p) => { const [a, b] = rango(p); return a === b ? `Talla ${a}` : `Tallas ${a} a ${b}`; };
+  const extremos = (lista) => {
+    const r = lista.map(rango);
+    return [Math.min(...r.map((x) => x[0])), Math.max(...r.map((x) => x[1]))];
+  };
+  const serie = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
+  /* ---------- Precio (con descuento opcional "precioAntes") ---------- */
+  const enOferta = (p) => Number(p.precioAntes) > p.precio;
+  const descuento = (p) => Math.round((1 - p.precio / p.precioAntes) * 100);
+  const precioHTML = (p) => enOferta(p)
+    ? `<s><span class="oculto">Antes </span>${pesos(p.precioAntes)}</s> <span class="precio-oferta"><span class="oculto">Ahora </span>${pesos(p.precio)}</span>`
+    : pesos(p.precio);
+  const sellos = (p) => {
+    const s = [];
+    if (enOferta(p)) s.push(`<span class="sello">-${descuento(p)}%</span>`);
+    if (p.nuevo) s.push(`<span class="sello">Nuevo</span>`);
+    return s.length ? `<span class="sellos">${s.join("")}</span>` : "";
+  };
 
   /* ---------- WhatsApp ---------- */
+  const SALUDO = `Hola, ${TIENDA.nombre}.`;
   const linkWA = (texto) =>
     `https://wa.me/${(TIENDA.whatsapp || "").replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
   const msgProducto = (p, talla) =>
-    `Hola, Calzado Leidy Carolina. Me interesa este zapato:\n- ${p.nombre} (Ref. ${p.id})\n- Precio: ${pesos(p.precio)}\n` +
+    `${SALUDO} Me interesa este zapato:\n- ${p.nombre} (Ref. ${p.id})\n- Precio: ${pesos(p.precio)}\n` +
     (talla ? `¿Lo tienen en talla ${talla}?` : "¿En qué tallas lo tienen disponible?");
+  const msgPedido = (p, talla, color) =>
+    `${SALUDO} Quiero pedir este zapato:\n- ${p.nombre} (Ref. ${p.id})\n- Color: ${color}\n- Talla: ${talla}\n` +
+    `- Precio: ${pesos(p.precio)}\n¿Está disponible?`;
+  const msgOtraTalla = (p) =>
+    `${SALUDO} Me gusta el modelo ${p.nombre} (Ref. ${p.id}), pero no encuentro mi talla. Mi talla es: `;
+  const MENSAJES = {
+    general: `${SALUDO} Quiero información sobre el catálogo.`,
+    compra: `${SALUDO} Quiero comprar y me gustaría que me ayuden a elegir modelo y talla.`,
+    servicio: `${SALUDO} Tengo una pregunta sobre un pedido.`,
+  };
+  const pintarEnlacesWA = (raiz = document) =>
+    $$("[data-wa]", raiz).forEach((a) => { a.href = linkWA(MENSAJES[a.dataset.wa] || MENSAJES.general); });
 
-  document.querySelectorAll("[data-wa-general]").forEach((a) => {
-    a.href = linkWA("Hola, Calzado Leidy Carolina. Quiero información sobre el catálogo.");
-  });
+  /* ---------- Categorías ---------- */
+  const TODAS = "todas";
+  const deCat = (id) => (id === TODAS ? PRODUCTOS : PRODUCTOS.filter((p) => p.categoria === id));
+  const nombreCat = (id) => (id === TODAS ? "Todo el catálogo" : CATEGORIAS.find((c) => c.id === id).nombre);
+  const tiposDe = (lista) => [...new Set(lista.map((p) => p.tipo))];
+  const NINOS = ["nino", "nina"]; // categorías infantiles: la guía de tallas muestra la edad aproximada
+
+  /* ---------- Bandas de precio, calculadas con los precios del catálogo ---------- */
+  const PRECIOS = PRODUCTOS.map((p) => p.precio);
+  const P_MIN = Math.min(...PRECIOS), P_MAX = Math.max(...PRECIOS);
+  const PASO = Math.max(10000, Math.ceil((P_MAX - P_MIN) / 4 / 10000) * 10000);
+  const BANDAS = [];
+  for (let lo = Math.floor(P_MIN / PASO) * PASO; lo <= P_MAX; lo += PASO) BANDAS.push([lo, lo + PASO]);
+  const enBanda = (p, i) => p.precio >= BANDAS[i][0] && p.precio < BANDAS[i][1];
+  const nombreBanda = (i) => {
+    const [lo, hi] = BANDAS[i];
+    if (lo === 0) return `Menos de ${pesos(hi)}`;
+    if (i === BANDAS.length - 1) return `Desde ${pesos(lo)}`;
+    return `${pesos(lo)} a ${pesos(hi)}`;
+  };
+
+  /* ---------- Estado ---------- */
+  const estado = { cat: "dama", tipo: "Todo", talla: null, precio: null, orden: "relevancia", q: "" };
+  function leerHash(h) {
+    if (CATEGORIAS.some((c) => c.id === h) || h === TODAS) { estado.cat = h; estado.tipo = "Todo"; return true; }
+    if (h === "nuevos") { estado.cat = TODAS; estado.tipo = "Nuevos"; return true; }
+    return false;
+  }
+  const hashInicial = leerHash(location.hash.slice(1));
+
+  const buscando = () => estado.q.trim().length > 0;
+  function base() {
+    const palabras = sinTildes(estado.q.trim()).split(/\s+/).filter(Boolean);
+    if (!palabras.length) return deCat(estado.cat);
+    return PRODUCTOS.filter((p) => {
+      const texto = sinTildes(`${p.nombre} ${p.tipo} ${p.id} ${nombreCat(p.categoria)}`);
+      return palabras.every((w) => texto.includes(w));
+    });
+  }
+  const cumpleTipo = (p) => estado.tipo === "Todo" || (estado.tipo === "Nuevos" ? !!p.nuevo : p.tipo === estado.tipo);
+  // "sin" deja fuera un filtro para contar las opciones de ese mismo filtro
+  const filtrar = (sin) => base().filter((p) =>
+    (sin === "tipo" || cumpleTipo(p)) &&
+    (sin === "talla" || !estado.talla || leQueda(p, estado.talla)) &&
+    (sin === "precio" || estado.precio === null || enBanda(p, estado.precio)));
+  function ordenar(lista) {
+    const l = [...lista];
+    if (estado.orden === "precio-menor") l.sort((a, b) => a.precio - b.precio);
+    else if (estado.orden === "precio-mayor") l.sort((a, b) => b.precio - a.precio);
+    else if (estado.orden === "nuevos") l.sort((a, b) => (b.nuevo ? 1 : 0) - (a.nuevo ? 1 : 0));
+    return l;
+  }
+  const activos = () => (estado.tipo !== "Todo" ? 1 : 0) + (estado.talla ? 1 : 0) + (estado.precio !== null ? 1 : 0);
+
+  /* ---------- Contenido que sale de los datos (una sola vez) ---------- */
+  const [T_MIN, T_MAX] = extremos(PRODUCTOS);
+  $("#datoModelos").textContent = `${PRODUCTOS.length} modelos con precio`;
+  $("#datoTallas").textContent = `de la talla ${T_MIN} a la ${T_MAX}`;
+  $("#anio").textContent = new Date().getFullYear();
+  $("#pieCiudad").textContent = TIENDA.ciudad;
   $("#lnkFacebook").href = TIENDA.facebook;
   $("#lnkInstagram").href = TIENDA.instagram;
   $("#lnkTiktok").href = TIENDA.tiktok;
-  $("#anio").textContent = new Date().getFullYear();
 
-  // Los datos de la etiqueta de portada salen del catálogo, no se escriben a mano
-  const rangos = PRODUCTOS.map((p) => p.tallas.split(/[–-]/).map((n) => parseInt(n, 10)));
-  $("#datoTallas").textContent = `De la ${Math.min(...rangos.map((r) => r[0]))} a la ${Math.max(...rangos.map((r) => r[1] ?? r[0]))}`;
-  $("#datoModelos").textContent = `${PRODUCTOS.length} modelos con precio`;
+  $("#navLista").innerHTML = CATEGORIAS.map((c) => `
+    <li class="nav__item">
+      <a class="nav__enlace" href="#${c.id}" data-ir="${c.id}">${c.nombre}</a>
+      <div class="nav__panel">
+        <ul>
+          <li><a href="#${c.id}" data-ir="${c.id}">Ver todo ${c.nombre.toLowerCase()} <span>${deCat(c.id).length}</span></a></li>
+          ${tiposDe(deCat(c.id)).map((t) => `<li><a href="#${c.id}" data-ir="${c.id}" data-ir-tipo="${t}">${t}</a></li>`).join("")}
+        </ul>
+      </div>
+    </li>`).join("") +
+    `<li class="nav__item"><a class="nav__enlace" href="#nuevos" data-ir="${TODAS}" data-ir-tipo="Nuevos">Nuevos</a></li>`;
 
-  /* ---------- Estado ---------- */
-  const inicial = location.hash.replace("#", "");
-  const estado = {
-    cat: CATEGORIAS.some((c) => c.id === inicial) ? inicial : "dama",
-    tipo: "Todos",
-    talla: null,
-    q: "",
-  };
-  const deCat = (id) => PRODUCTOS.filter((p) => p.categoria === id);
-  const nombreCat = (id) => CATEGORIAS.find((c) => c.id === id).nombre;
-
-  /* ---------- Pintar ---------- */
-  function pintarPestanas() {
-    $("#pestanas").innerHTML = CATEGORIAS.map((c) => `
-      <button role="tab" class="pestana" data-cat="${c.id}" aria-controls="hoja" aria-selected="${c.id === estado.cat}" tabindex="${c.id === estado.cat ? 0 : -1}">
-        ${c.nombre}<small>${deCat(c.id).length} modelos</small>
-      </button>`).join("");
-  }
-  function pintarTipos() {
-    const tipos = ["Todos", ...new Set(deCat(estado.cat).map((p) => p.tipo))];
-    $("#tipos").innerHTML = tipos.map((t) =>
-      `<button type="button" class="tipo" data-tipo="${t}" aria-pressed="${t === estado.tipo}">${t}</button>`).join("");
-  }
-
-  function filaItem(p) {
+  $("#mosaico").innerHTML = CATEGORIAS.map((c) => {
+    const ps = deCat(c.id);
+    const muestra = ps.find((p) => p.nuevo) || ps[0];
     return `
-      <li class="item" data-id="${p.id}">
-        <button type="button" class="item__dibujo" data-abrir="${p.id}" aria-label="Ver ${p.nombre}">${dibujo(p)}</button>
-        <button type="button" class="item__nombre" data-abrir="${p.id}">${p.nombre}${p.nuevo ? `<span class="item__nuevo">nuevo</span>` : ""}</button>
-        <span class="item__precio">${pesos(p.precio)}</span>
-        <span class="item__datos">Ref. ${p.id} · ${tallasTexto(p)}
-          <span class="puntos" role="img" aria-label="${p.colores.length} ${p.colores.length === 1 ? "color" : "colores"}">${p.colores.map((c) => `<i style="background:${c}"></i>`).join("")}</span>
-        </span>
-        <a class="item__pedir" href="${linkWA(msgProducto(p, estado.talla))}" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+      <li><a class="mosaico__tile" href="#${c.id}" data-ir="${c.id}">
+        <span class="mosaico__foto">${dibujo(muestra, true)}</span>
+        <span class="mosaico__nombre">${c.nombre}</span>
+        <span class="mosaico__n">${plural(ps.length, "modelo", "modelos")}</span>
+      </a></li>`;
+  }).join("");
+
+  const servicios = (TIENDA.servicios || []).filter((s) => s && s.titulo);
+  $("#servicios").innerHTML = servicios.map((s) =>
+    `<li><b>${esc(s.titulo)}</b><span>${esc(s.texto || "")}</span></li>`).join("");
+  if (!servicios.length) $(".servicios").hidden = true;
+
+  const POLITICAS = [["envios", "Envíos"], ["cambios", "Cambios"], ["pagos", "Medios de pago"]];
+  const htmlPoliticas = () => POLITICAS.filter(([k]) => TIENDA.politicas?.[k])
+    .map(([k, t]) => `<details class="acordeon__item"><summary>${t}</summary><p>${esc(TIENDA.politicas[k])}</p></details>`).join("");
+  $("#politicas").innerHTML = htmlPoliticas();
+
+  $("#pieCategorias").innerHTML = CATEGORIAS.map((c) =>
+    `<li><a href="#${c.id}" data-ir="${c.id}">${c.nombre}</a></li>`).join("") +
+    `<li><a href="#nuevos" data-ir="${TODAS}" data-ir-tipo="Nuevos">Nuevos</a></li>`;
+
+  // Los datos de la tienda solo se muestran si están llenos en TIENDA
+  const consulta = encodeURIComponent(`${TIENDA.nombre} ${TIENDA.direccion || ""} ${TIENDA.ciudad}`.replace(/\s+/g, " "));
+  $("#pieTienda").innerHTML = [
+    TIENDA.ciudad && `<li><a href="https://www.google.com/maps/search/?api=1&amp;query=${consulta}" target="_blank" rel="noopener">${esc(TIENDA.ciudad)}</a></li>`,
+    TIENDA.direccion && `<li>${esc(TIENDA.direccion)}</li>`,
+    TIENDA.horario && `<li>${esc(TIENDA.horario)}</li>`,
+    TIENDA.telefono && `<li><a href="tel:${esc(TIENDA.telefono.replace(/[^\d+]/g, ""))}">Tel. ${esc(TIENDA.telefono)}</a></li>`,
+    `<li><a data-wa="general" target="_blank" rel="noopener">WhatsApp</a></li>`,
+    TIENDA.nit && `<li>NIT ${esc(TIENDA.nit)}</li>`,
+  ].filter(Boolean).join("");
+
+  pintarEnlacesWA();
+
+  /* ---------- Barra de avisos: se turnan, con pausa; quietos si se reduce el movimiento ---------- */
+  const avisos = (Array.isArray(TIENDA.anuncios) ? TIENDA.anuncios : [TIENDA.anuncio]).filter(Boolean).slice(0, 3);
+  const avisoTexto = $("#avisoTexto");
+  if (!avisos.length) $("#aviso").hidden = true;
+  else {
+    avisoTexto.textContent = avisos[0];
+    if (avisos.length > 1 && !reducido) {
+      const pausa = $("#avisoPausa");
+      let i = 0, pausado = false, encima = false;
+      pausa.hidden = false;
+      pausa.addEventListener("click", () => {
+        pausado = !pausado;
+        pausa.setAttribute("aria-pressed", String(pausado));
+        $(".oculto", pausa).textContent = pausado ? "Reanudar avisos" : "Pausar avisos";
+        $("path", pausa).setAttribute("d", pausado ? "M8 5v14l11-7z" : "M8 6h3v12H8zM13 6h3v12h-3z");
+      });
+      const aviso = $("#aviso");
+      aviso.addEventListener("mouseenter", () => { encima = true; });
+      aviso.addEventListener("mouseleave", () => { encima = false; });
+      setInterval(() => {
+        if (pausado || encima || document.hidden) return;
+        i = (i + 1) % avisos.length;
+        const salida = avisoTexto.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, fill: "forwards" });
+        salida.onfinish = () => {
+          avisoTexto.textContent = avisos[i];
+          salida.cancel();
+          avisoTexto.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
+            { duration: 260, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+        };
+      }, 5000);
+    }
+  }
+
+  /* ---------- Pintar el catálogo ---------- */
+  const opcion = (attr, valor, texto, n, activo) => `
+    <li><button type="button" class="opcion" data-${attr}="${valor}" aria-pressed="${activo}" ${n === 0 && !activo ? "disabled" : ""}>
+      <span>${texto}</span><span class="opcion__n">${n}</span>
+    </button></li>`;
+
+  function opcionesTipo() {
+    const b = base(), sinTipo = filtrar("tipo");
+    const lista = [["Todo", sinTipo.length]];
+    if (b.some((p) => p.nuevo)) lista.push(["Nuevos", sinTipo.filter((p) => p.nuevo).length]);
+    tiposDe(b).forEach((t) => lista.push([t, sinTipo.filter((p) => p.tipo === t).length]));
+    // el tipo activo sigue visible aunque la búsqueda ya no lo incluya, para poder quitarlo
+    if (!lista.some(([t]) => t === estado.tipo)) lista.push([estado.tipo, 0]);
+    return lista;
+  }
+
+  function htmlFiltros() {
+    const b = base();
+    let h = `<div class="filtro"><h3 class="filtro__titulo">Categoría</h3>`;
+    h += buscando()
+      ? `<p class="filtro__nota">Buscando en todo el catálogo.</p>
+         <button type="button" class="enlace enlace--bloque" data-borrar-busqueda>Borrar búsqueda</button>`
+      // al cambiar de categoría se conserva la talla (tipo y precio se reinician), así que el conteo la incluye
+      : `<ul class="filtro__lista">${[TODAS, ...CATEGORIAS.map((c) => c.id)].map((id) =>
+          opcion("cat", id, id === TODAS ? "Todas" : nombreCat(id),
+            deCat(id).filter((p) => !estado.talla || leQueda(p, estado.talla)).length, id === estado.cat)).join("")}</ul>`;
+    h += `</div>`;
+
+    h += `<div class="filtro"><h3 class="filtro__titulo">Tipo</h3><ul class="filtro__lista">${
+      opcionesTipo().map(([t, n]) => opcion("tipo", t, t, n, t === estado.tipo)).join("")}</ul></div>`;
+
+    if (b.length) {
+      const sinTalla = filtrar("talla");
+      const presentes = new Set(b.flatMap((p) => serie(...rango(p))));
+      if (estado.talla) presentes.add(estado.talla);
+      const tallas = [...presentes].sort((x, y) => x - y);
+      h += `<div class="filtro"><h3 class="filtro__titulo">Talla</h3>
+        <div class="tallas" role="group" aria-label="Talla">${tallas.map((t) => {
+          const n = sinTalla.filter((p) => leQueda(p, t)).length;
+          const activo = t === estado.talla;
+          return `<button type="button" class="talla" data-talla="${t}" aria-pressed="${activo}" ${n === 0 && !activo ? "disabled" : ""}>${t}<span class="oculto">, ${plural(n, "modelo", "modelos")}</span></button>`;
+        }).join("")}</div>
+        <button type="button" class="enlace enlace--bloque" data-guia>Guía de tallas</button></div>`;
+
+      const sinPrecio = filtrar("precio");
+      h += `<div class="filtro"><h3 class="filtro__titulo">Precio</h3><ul class="filtro__lista">${
+        BANDAS.map((_, i) => i).filter((i) => b.some((p) => enBanda(p, i)) || estado.precio === i)
+          .map((i) => opcion("precio", i, nombreBanda(i), sinPrecio.filter((p) => enBanda(p, i)).length, i === estado.precio)).join("")
+      }</ul></div>`;
+    }
+    if (activos()) h += `<div class="filtro"><button type="button" class="boton boton--claro filtros__limpiar" data-limpiar>Limpiar filtros</button></div>`;
+    return h;
+  }
+
+  function tarjeta(p, { mixto = false, mini = false } = {}) {
+    const nombres = nombresColores(p);
+    const h = mini ? "h4" : "h3"; // en la ficha las mini tarjetas van bajo el h3 "También te puede gustar"
+    return `
+      <li class="tarjeta${mini ? " tarjeta--mini" : ""}">
+        <div class="tarjeta__foto">${dibujo(p, true)}${sellos(p)}</div>
+        <div class="tarjeta__info">
+          <${h} class="tarjeta__nombre"><button type="button" class="tarjeta__abrir" data-abrir="${p.id}">${esc(p.nombre)}</button></${h}>
+          <p class="tarjeta__meta">${mixto ? `${nombreCat(p.categoria)} · ` : ""}${esc(p.tipo)} · ${plural(p.colores.length, "color", "colores")}</p>
+          <p class="tarjeta__precio">${precioHTML(p)}</p>
+          ${mini ? "" : `<span class="puntos" role="img" aria-label="Colores: ${listaY(nombres).toLowerCase()}">${p.colores.map((c) => `<i style="background:${c}"></i>`).join("")}</span>`}
+        </div>
+        ${mini ? "" : `<a class="tarjeta__wa" href="${linkWA(msgProducto(p, estado.talla))}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#iconoWa"/></svg><span class="oculto">Pedir ${esc(p.nombre)} por WhatsApp</span>
+        </a>`}
       </li>`;
   }
 
   function pintarLista() {
-    const q = sinTildes(estado.q.trim());
-    const buscando = q.length > 0;
-    let lista = buscando
-      ? PRODUCTOS.filter((p) => sinTildes(`${p.nombre} ${p.tipo} ${p.id}`).includes(q))
-      : deCat(estado.cat).filter((p) => estado.tipo === "Todos" || p.tipo === estado.tipo);
-    const antesDeTalla = lista.length;
-    if (estado.talla) lista = lista.filter((p) => leQueda(p, estado.talla));
+    const lista = ordenar(filtrar());
+    const q = estado.q.trim();
+    const mixto = buscando() || estado.cat === TODAS;
 
-    // Encabezado de la hoja
-    const cat = nombreCat(estado.cat).toLowerCase();
-    $("#hojaTitulo").textContent = buscando ? `Buscando “${estado.q.trim()}”` : `Catálogo de ${cat}`;
-    const todas = deCat(estado.cat).map(rango);
-    const min = Math.min(...todas.map((r) => r[0])), max = Math.max(...todas.map((r) => r[1]));
-    $("#hojaNota").textContent = buscando
-      ? `${lista.length} ${lista.length === 1 ? "resultado" : "resultados"} en todo el catálogo`
-      : `${lista.length} ${lista.length === 1 ? "modelo" : "modelos"} · tallas ${min} a ${max} · precios en pesos`;
+    let titulo = nombreCat(estado.cat);
+    if (q) titulo = `Resultados para “${q}”`;
+    else if (estado.tipo !== "Todo") titulo = estado.cat === TODAS ? estado.tipo : `${titulo} · ${estado.tipo}`;
+    $("#catTitulo").textContent = titulo;
+    $("#catCuenta").textContent = plural(lista.length, "modelo", "modelos") +
+      (estado.talla ? ` en talla ${estado.talla}` : "") + (q ? " en todo el catálogo" : "");
+    $("#verResultados").textContent = lista.length ? `Ver ${plural(lista.length, "resultado", "resultados")}` : "Cerrar";
+    $("#filtrosN").textContent = activos() ? ` (${activos()})` : "";
 
-    // Resultado de la talla
-    const res = $("#tallaResultado");
-    if (estado.talla) {
-      res.innerHTML = lista.length
-        ? `<b>${lista.length} de ${antesDeTalla}</b> ${buscando ? "resultados" : `modelos de ${cat}`} vienen en talla ${estado.talla}.`
-        : `Ningún modelo ${buscando ? "de esta búsqueda" : `de ${cat}`} viene en talla ${estado.talla}.`;
-    } else {
-      res.textContent = "Escribe tu talla y te mostramos solo lo que te queda.";
-    }
-    $("#tallaBorrar").hidden = !estado.talla;
-
-    // Lista agrupada por tipo, como una hoja impresa
+    const vacio = $("#vacio");
     if (!lista.length) {
-      $("#catTipo").textContent = "";
-      if (ioGrupos) ioGrupos.disconnect();
-      $("#lista").innerHTML = `
-        <div class="hoja__vacia">
-          <p>${estado.talla ? `No tenemos ese modelo en talla ${estado.talla} en el catálogo.` : "No encontramos ese zapato en el catálogo."}
-          Escríbenos: a veces llega mercancía nueva antes de que la subamos.</p>
-          <a class="boton" href="${linkWA(`Hola, Calzado Leidy Carolina. Busco ${estado.q.trim() ? `"${estado.q.trim()}"` : `zapatos de ${cat}`}${estado.talla ? ` en talla ${estado.talla}` : ""}. ¿Tienen algo?`)}" target="_blank" rel="noopener">Preguntar por WhatsApp</a>
+      $("#rejilla").innerHTML = "";
+      const busca = q ? `"${q}"` : `zapatos de ${nombreCat(estado.cat).toLowerCase()}${estado.tipo !== "Todo" ? ` (${estado.tipo.toLowerCase()})` : ""}`;
+      vacio.innerHTML = `
+        <h3 class="vacio__titulo">No encontramos modelos con estos filtros</h3>
+        <p>A veces llega mercancía antes de que la subamos al catálogo. Pregúntanos por WhatsApp${estado.talla ? ` por la talla ${estado.talla}` : ""}.</p>
+        <div class="vacio__acciones">
+          <a class="boton boton--wa" href="${linkWA(`${SALUDO} Busco ${busca}${estado.talla ? ` en talla ${estado.talla}` : ""}. ¿Tienen algo?`)}" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#iconoWa"/></svg>¿No ves tu talla? Pregúntanos</a>
+          ${activos() || q ? `<button type="button" class="boton boton--claro" data-limpiar>Limpiar filtros</button>` : ""}
         </div>`;
+      vacio.hidden = false;
       return;
     }
-    const grupos = new Map();
-    lista.forEach((p) => {
-      const k = buscando ? `${nombreCat(p.categoria)} · ${p.tipo}` : p.tipo;
-      if (!grupos.has(k)) grupos.set(k, []);
-      grupos.get(k).push(p);
-    });
-    $("#lista").innerHTML = [...grupos].map(([nombre, items]) => `
-      <section class="grupo" aria-label="${nombre}">
-        <h4 class="grupo__nombre">${nombre}</h4>
-        <ul>${items.map(filaItem).join("")}</ul>
-      </section>`).join("");
-    $("#catTipo").textContent = buscando ? "" : [...grupos.keys()][0];
-    vigilarGrupos();
-    entradaLista();
+    vacio.hidden = true;
+    vacio.innerHTML = "";
+    $("#rejilla").innerHTML = lista.map((p) => tarjeta(p, { mixto })).join("");
   }
 
+  function pintarFiltros() {
+    const filtros = htmlFiltros();
+    $("#filtrosLado").innerHTML = filtros;
+    $("#filtrosHoja").innerHTML = filtros;
+    $("#pildoras").innerHTML = opcionesTipo().map(([t]) =>
+      `<button type="button" class="pildora" data-tipo="${t}" aria-pressed="${t === estado.tipo}">${t}</button>`).join("");
+  }
+
+  // Al repintar una zona de filtros, el foco vuelve al mismo botón (o al primero de la zona)
   function pintar() {
-    $("#catTexto").textContent = nombreCat(estado.cat);
-    pintarPestanas(); pintarTipos(); pintarLista();
-  }
-
-  /* ---------- Historia fija: el mando dice qué tipo de zapato va pasando ---------- */
-  let ioGrupos = null;
-  function vigilarGrupos() {
-    if (!("IntersectionObserver" in window)) return;
-    if (ioGrupos) ioGrupos.disconnect();
-    if (estado.q.trim()) return;
-    ioGrupos = new IntersectionObserver((entradas) => {
-      entradas.forEach((e) => {
-        if (!e.isIntersecting) return;
-        const tipo = $("#catTipo");
-        const nombre = e.target.querySelector(".grupo__nombre").textContent;
-        if (tipo.textContent === nombre) return;
-        tipo.textContent = nombre;
-        subir(tipo, 0, 12);
-      });
-    }, { rootMargin: "-35% 0px -64% 0px" });
-    document.querySelectorAll("#lista .grupo").forEach((g) => ioGrupos.observe(g));
-  }
-
-  /* ---------- Movimiento ---------- */
-  const SALIDA = "cubic-bezier(0.22, 1, 0.36, 1)";
-  function subir(el, retraso = 0, distancia = 24) {
-    if (reducido || !el.animate) return;
-    el.animate(
-      [{ opacity: 0, transform: `translateY(${distancia}px)` }, { opacity: 1, transform: "none" }],
-      { duration: 700, delay: retraso, easing: SALIDA, fill: "backwards" });
-  }
-  // Las filas visibles entran escalonadas cada vez que cambia la hoja
-  function entradaLista() {
-    const filas = [...document.querySelectorAll("#lista .item, #lista .grupo__nombre")];
-    let n = 0;
-    filas.forEach((f) => {
-      const r = f.getBoundingClientRect();
-      if (r.top < innerHeight && r.bottom > 0) subir(f, 40 * n++, 16);
-    });
-  }
-  // Entrada de las partes de cada sección al aparecer: título, texto, imagen
-  if ("IntersectionObserver" in window && !reducido) {
-    const grupos = [
-      [".mando__nombre", ".pestanas", ".talla", ".tipos", ".buscar"],
-      [".valle__nota"],
-      [".pedir__texto h2", ".pedir__texto > p", ".laminas figure:nth-child(1)", ".laminas figure:nth-child(2)", ".tirilla"],
-      [".cupon"],
-      [".pie__marca", ".pie__lugares", ".pie__cols"],
-    ];
-    const io = new IntersectionObserver((entradas) => {
-      entradas.forEach((e) => {
-        if (!e.isIntersecting) return;
-        io.unobserve(e.target);
-        subir(e.target, Number(e.target.dataset.retraso || 0));
-      });
-    }, { rootMargin: "0px 0px -10% 0px" });
-    grupos.forEach((sel) => sel.forEach((s, i) => {
-      document.querySelectorAll(s).forEach((el) => {
-        if (el.getBoundingClientRect().top < innerHeight) return; // lo ya visible no se esconde
-        el.dataset.retraso = i * 80;
-        io.observe(el);
-      });
-    }));
-    // Las filas de la hoja entran al bajar
-    const ioFilas = new IntersectionObserver((entradas) => {
-      let n = 0;
-      entradas.forEach((e) => {
-        if (!e.isIntersecting) return;
-        ioFilas.unobserve(e.target);
-        subir(e.target, 60 * n++, 16);
-      });
-    }, { rootMargin: "0px 0px -6% 0px" });
-    const vigilarFilas = () => {
-      ioFilas.disconnect(); // las filas viejas ya no están en la página
-      document.querySelectorAll("#lista .item").forEach((f) => {
-        if (f.getBoundingClientRect().top > innerHeight) ioFilas.observe(f);
-      });
-    };
-    new MutationObserver(vigilarFilas).observe($("#lista"), { childList: true });
-    vigilarFilas();
-  }
-  // La etiqueta de la portada entra y se aleja un poco al bajar
-  const etiqueta = $("#etiqueta");
-  if (!reducido) {
-    subir(etiqueta, 150, 40);
-    let pendiente = false;
-    addEventListener("scroll", () => {
-      if (pendiente) return;
-      pendiente = true;
-      requestAnimationFrame(() => {
-        const p = Math.min(scrollY / innerHeight, 1);
-        etiqueta.style.transform = `translateY(${p * 12}vh) scale(${1 - p * 0.1})`;
-        pendiente = false;
-      });
-    }, { passive: true });
+    const a = document.activeElement;
+    const zona = a?.closest?.("[data-region]");
+    const attr = zona && ["cat", "tipo", "talla", "precio"].find((k) => a.dataset[k] !== undefined);
+    pintarFiltros();
+    pintarLista();
+    if (zona && zona.isConnected) {
+      const b = (attr && $(`[data-${attr}="${CSS.escape(a.dataset[attr])}"]:not(:disabled)`, zona)) || $("button:not(:disabled)", zona);
+      b?.focus();
+    }
   }
 
   /* ---------- Acciones ---------- */
-  function irACategoria(id, desplazar) {
-    estado.cat = id; estado.tipo = "Todos"; estado.q = ""; $("#buscar").value = "";
-    history.replaceState(null, "", "#" + id);
+  const buscar = $("#buscar");
+  function irACategoria(id, tipo = "Todo", llevar = true) {
+    estado.cat = id; estado.tipo = tipo; estado.precio = null; estado.q = ""; buscar.value = "";
+    history.replaceState(null, "", "#" + (id === TODAS && tipo === "Nuevos" ? "nuevos" : id));
     pintar();
-    if (desplazar) $("#catalogo").scrollIntoView({ behavior: reducido ? "auto" : "smooth" });
+    if (llevar) desplazar($("#catalogo"));
   }
+  function limpiar() {
+    estado.tipo = "Todo"; estado.talla = null; estado.precio = null;
+    if (buscando()) { estado.q = ""; buscar.value = ""; }
+    pintar();
+  }
+  const llevarAlCatalogo = () => {
+    const r = $("#catalogo").getBoundingClientRect();
+    if (r.top > innerHeight * 0.4 || r.bottom < innerHeight * 0.3) desplazar($("#catalogo"));
+  };
 
   document.addEventListener("click", (e) => {
     const t = e.target;
-    const pest = t.closest("[data-cat]");
-    if (pest) return irACategoria(pest.dataset.cat, false);
+    if (e.defaultPrevented || !(t instanceof Element)) return;
+
+    // Un enlace interno dentro de una ventana la cierra antes de llevarte
+    const interno = t.closest("a[href^='#']");
+    if (interno) interno.closest("dialog[open]")?.close();
+
+    const cerrar = t.closest("[data-cerrar]");
+    if (cerrar) { cerrar.closest("dialog")?.close(); return; }
+
     const ir = t.closest("[data-ir]");
-    if (ir) { e.preventDefault(); return irACategoria(ir.dataset.ir, true); }
+    if (ir) { e.preventDefault(); return irACategoria(ir.dataset.ir, ir.dataset.irTipo || "Todo", true); }
+
+    const cat = t.closest("[data-cat]");
+    if (cat) return irACategoria(cat.dataset.cat, "Todo", false);
+
     const tipo = t.closest("[data-tipo]");
-    if (tipo) { estado.tipo = tipo.dataset.tipo; pintarTipos(); pintarLista(); return; }
+    if (tipo) { estado.tipo = tipo.dataset.tipo; return pintar(); }
+
+    const talla = t.closest("[data-talla]");
+    if (talla) { const n = Number(talla.dataset.talla); estado.talla = estado.talla === n ? null : n; return pintar(); }
+
+    const precio = t.closest("[data-precio]");
+    if (precio) { const i = Number(precio.dataset.precio); estado.precio = estado.precio === i ? null : i; return pintar(); }
+
+    if (t.closest("[data-limpiar]")) return limpiar();
+    if (t.closest("[data-borrar-busqueda]")) { estado.q = ""; buscar.value = ""; return pintar(); }
+
     const abrir = t.closest("[data-abrir]");
-    if (abrir) abrirFicha(abrir.dataset.abrir);
+    if (abrir) return abrirFicha(abrir.dataset.abrir);
+
+    const guia = t.closest("[data-guia]");
+    if (guia) {
+      if (guia.closest("#menuMovil")) $("#menuMovil").close();
+      return abrirGuia();
+    }
+
+    const menuCat = t.closest("[data-menu-cat]");
+    if (menuCat) { pintarCajon(menuCat.dataset.menuCat); return $("[data-menu-volver]").focus(); }
+    const volver = t.closest("[data-menu-volver]");
+    if (volver) { const id = volver.dataset.menuVolver; pintarCajon(null); return $(`[data-menu-cat="${id}"]`).focus(); }
+
+    const fTalla = t.closest("[data-ficha-talla]");
+    if (fTalla) return elegirTalla(Number(fTalla.dataset.fichaTalla));
+    const fColor = t.closest("[data-ficha-color]");
+    if (fColor) return elegirColor(Number(fColor.dataset.fichaColor));
   });
 
-  // Teclado en las pestañas: flechas para moverse
-  $("#pestanas").addEventListener("keydown", (e) => {
-    if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
-    const i = CATEGORIAS.findIndex((c) => c.id === estado.cat);
-    const j = (i + (e.key === "ArrowRight" ? 1 : -1) + CATEGORIAS.length) % CATEGORIAS.length;
-    irACategoria(CATEGORIAS[j].id, false);
-    $(`.pestana[data-cat="${CATEGORIAS[j].id}"]`).focus();
+  $("#orden").addEventListener("change", (e) => { estado.orden = e.target.value; pintarLista(); });
+
+  buscar.addEventListener("input", () => {
+    const antes = buscando();
+    estado.q = buscar.value;
+    if (buscando() !== antes) { estado.tipo = "Todo"; estado.precio = null; }
+    pintar();
+    if (!antes && buscando()) llevarAlCatalogo();
+  });
+  $("#buscador").addEventListener("submit", (e) => { e.preventDefault(); llevarAlCatalogo(); });
+
+  addEventListener("hashchange", () => { if (leerHash(location.hash.slice(1))) { estado.q = ""; buscar.value = ""; pintar(); } });
+
+  // Buscador plegable en el teléfono
+  const cabecera = $(".cabecera");
+  $("#abrirBuscar").addEventListener("click", (e) => {
+    const abrir = !cabecera.classList.contains("buscando");
+    cabecera.classList.toggle("buscando", abrir);
+    e.currentTarget.setAttribute("aria-expanded", String(abrir));
+    if (abrir) buscar.focus();
   });
 
-  $("#talla").addEventListener("input", (e) => {
-    const n = parseInt(e.target.value, 10);
-    estado.talla = n >= 15 && n <= 46 ? n : null;
-    pintarLista();
+  // Menú de categorías: Escape cierra el panel abierto por el foco
+  $("#navLista").addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const item = e.target.closest(".nav__item");
+    if (!item) return;
+    item.classList.add("cerrado");
+    $(".nav__enlace", item).focus();
   });
-  $("#tallaBorrar").addEventListener("click", () => {
-    $("#talla").value = ""; estado.talla = null; pintarLista(); $("#talla").focus();
+  $$(".nav__item").forEach((item) => {
+    const abrir = () => item.classList.remove("cerrado");
+    item.addEventListener("mouseleave", abrir);
+    item.addEventListener("focusout", (e) => { if (!item.contains(e.relatedTarget)) abrir(); });
   });
-  $("#buscar").addEventListener("input", (e) => { estado.q = e.target.value; pintarLista(); });
+
+  /* ---------- Ventanas (dialog nativo: Escape y foco atrapado) ---------- */
+  $$("dialog.modal").forEach((d) => {
+    d.addEventListener("click", (e) => { if (e.target === d) d.close(); }); // clic en el fondo
+  });
+
+  // Filtros en teléfono y tableta
+  const hojaFiltros = $("#hojaFiltros");
+  $("#abrirFiltros").addEventListener("click", () => hojaFiltros.showModal());
+  hojaFiltros.addEventListener("close", () => $("#abrirFiltros").focus());
+
+  // Menú en teléfono y tableta, por niveles
+  const menu = $("#menuMovil");
+  function pintarCajon(id) {
+    const cuerpo = $("#cajonCuerpo");
+    if (!id) {
+      cuerpo.innerHTML = `
+        <ul class="cajon__lista">
+          ${CATEGORIAS.map((c) => `<li><button type="button" class="cajon__item cajon__item--cat" data-menu-cat="${c.id}">${c.nombre}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#iconoFlecha"/></svg></button></li>`).join("")}
+          <li><a class="cajon__item cajon__item--cat" href="#nuevos" data-ir="${TODAS}" data-ir-tipo="Nuevos">Nuevos</a></li>
+        </ul>
+        <ul class="cajon__lista">
+          <li><a class="cajon__item" href="#ayuda">Cómo pedir</a></li>
+          <li><button type="button" class="cajon__item" data-guia>Guía de tallas</button></li>
+          <li><a class="cajon__item" href="#envios">Envíos, cambios y pagos</a></li>
+          <li><a class="cajon__item" href="#pedido">¿No encuentras tu talla?</a></li>
+        </ul>
+        <div class="cajon__pie">
+          <a class="boton boton--wa" data-wa="general" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#iconoWa"/></svg>Escribir por WhatsApp</a>
+        </div>`;
+      pintarEnlacesWA(cuerpo);
+      return;
+    }
+    const c = CATEGORIAS.find((x) => x.id === id);
+    cuerpo.innerHTML = `
+      <button type="button" class="cajon__volver" data-menu-volver="${c.id}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#iconoFlecha"/></svg>Volver</button>
+      <h2 class="cajon__titulo">${c.nombre}</h2>
+      <ul class="cajon__lista">
+        <li><a class="cajon__item" href="#${c.id}" data-ir="${c.id}">Ver todo <span>${deCat(c.id).length}</span></a></li>
+        ${tiposDe(deCat(c.id)).map((t) => `<li><a class="cajon__item" href="#${c.id}" data-ir="${c.id}" data-ir-tipo="${t}">${t}
+          <span>${deCat(c.id).filter((p) => p.tipo === t).length}</span></a></li>`).join("")}
+      </ul>`;
+  }
+  const abrirMenu = $("#abrirMenu");
+  abrirMenu.addEventListener("click", () => {
+    pintarCajon(null);
+    menu.showModal();
+    abrirMenu.setAttribute("aria-expanded", "true");
+  });
+  menu.addEventListener("close", () => abrirMenu.setAttribute("aria-expanded", "false"));
 
   /* ---------- Ficha del producto ---------- */
   const ficha = $("#ficha");
+  let sel = null; // { p, talla, color }
+
   function abrirFicha(id) {
     const p = PRODUCTOS.find((x) => x.id === id);
-    $("#fichaContenido").innerHTML = `
-      <div class="ficha__cuerpo">
-        <div class="ficha__dibujo">${dibujo(p)}</div>
-        <div class="ficha__info">
-          <p class="ficha__ref">${nombreCat(p.categoria)} · ${p.tipo} · Ref. ${p.id}</p>
-          <h2 id="fichaNombre">${p.nombre}</h2>
-          <p class="ficha__precio">${pesos(p.precio)}</p>
-          <dl>
-            <dt>Tallas</dt><dd>${rango(p)[0]} a ${rango(p)[1]}${estado.talla ? (leQueda(p, estado.talla) ? ` · viene en tu talla ${estado.talla}` : ` · no viene en ${estado.talla}`) : ""}</dd>
-            <dt>Colores</dt><dd class="puntos">${p.colores.map((c) => `<i style="background:${c}"></i>`).join("")}</dd>
-          </dl>
-          <a class="boton" href="${linkWA(msgProducto(p, estado.talla))}" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-          <p class="ficha__nota">Te confirmamos talla y color por chat antes de pagar.</p>
-        </div>
-      </div>`;
-    $("#cuponModelo").value = `${p.nombre} (Ref. ${p.id})`;
-    if (estado.talla) $("#cuponTalla").value = estado.talla;
-    ficha.showModal();
-  }
-  $("#fichaCerrar").addEventListener("click", () => ficha.close());
-  ficha.addEventListener("click", (e) => { if (e.target === ficha) ficha.close(); });
+    if (!p) return;
+    const [a, b] = rango(p);
+    sel = { p, talla: estado.talla && leQueda(p, estado.talla) ? estado.talla : null, color: 0 };
+    const nombres = nombresColores(p);
+    const relacionados = [
+      ...PRODUCTOS.filter((x) => x.id !== p.id && x.categoria === p.categoria && x.tipo === p.tipo),
+      ...PRODUCTOS.filter((x) => x.categoria === p.categoria && x.tipo !== p.tipo),
+    ].slice(0, 4);
+    const pol = POLITICAS.filter(([k]) => TIENDA.politicas?.[k]);
 
-  /* ---------- Cupón: arma el mensaje y abre WhatsApp ---------- */
-  $("#formCupon").addEventListener("submit", (e) => {
+    $("#fichaContenido").innerHTML = `
+      <div class="modal__barra">
+        <nav class="migas" aria-label="Ruta">
+          <ol>
+            <li><a href="#${p.categoria}" data-ir="${p.categoria}">${nombreCat(p.categoria)}</a></li>
+            <li><a href="#${p.categoria}" data-ir="${p.categoria}" data-ir-tipo="${p.tipo}">${esc(p.tipo)}</a></li>
+            <li aria-current="page">${esc(p.nombre)}</li>
+          </ol>
+        </nav>
+        <button type="button" class="icono" data-cerrar autofocus><span class="oculto">Cerrar</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#iconoX"/></svg></button>
+      </div>
+      <div class="ficha__cuerpo">
+        <div class="ficha__foto" id="fichaFoto">${dibujo(p)}${sellos(p)}</div>
+        <div class="ficha__info">
+          <h2 class="ficha__nombre" id="fichaNombre" tabindex="-1">${esc(p.nombre)}</h2>
+          <p class="ficha__ref">Ref. ${p.id} · ${nombreCat(p.categoria)} · ${esc(p.tipo)}</p>
+          <p class="ficha__precio">${precioHTML(p)}</p>
+
+          <div class="ficha__grupo" role="group" aria-labelledby="fichaColorTitulo">
+            <p class="ficha__etiqueta" id="fichaColorTitulo">Color: <b id="fichaColor">${nombres[0]}</b></p>
+            <div class="colores">${p.colores.map((c, i) => `
+              <button type="button" class="color" data-ficha-color="${i}" aria-pressed="${i === 0}"><i style="background:${c}"></i>${nombres[i]}</button>`).join("")}
+            </div>
+          </div>
+
+          <div class="ficha__grupo" role="group" aria-labelledby="fichaTallaTitulo">
+            <div class="ficha__fila">
+              <p class="ficha__etiqueta" id="fichaTallaTitulo">Talla <span class="ficha__rango">(${a} a ${b})</span></p>
+              <button type="button" class="enlace enlace--bloque" data-guia>Guía de tallas</button>
+            </div>
+            <div class="tallas tallas--ficha">${serie(a, b).map((t) =>
+              `<button type="button" class="talla" data-ficha-talla="${t}" aria-pressed="${t === sel.talla}">${t}</button>`).join("")}
+            </div>
+            <p class="ficha__aviso" id="fichaAviso" role="alert"></p>
+          </div>
+
+          <a class="boton boton--wa ficha__pedir" id="fichaPedir" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#iconoWa"/></svg>Pedir por WhatsApp</a>
+          <a class="enlace enlace--bloque" href="${linkWA(msgOtraTalla(p))}" target="_blank" rel="noopener">¿No encuentras tu talla? Escríbenos</a>
+
+          ${servicios.length ? `<ul class="ficha__servicios">${servicios.map((s) => `<li><b>${esc(s.titulo)}.</b> ${esc(s.texto || "")}</li>`).join("")}</ul>` : ""}
+
+          <div class="acordeon">
+            <details class="acordeon__item"><summary>Detalles del producto</summary>
+              <dl class="datos">
+                <dt>Referencia</dt><dd>${p.id}</dd>
+                <dt>Categoría</dt><dd>${nombreCat(p.categoria)}</dd>
+                <dt>Tipo</dt><dd>${esc(p.tipo)}</dd>
+                <dt>Tallas</dt><dd>${tallasTexto(p).replace(/^Tallas? /, "")}</dd>
+                <dt>Colores</dt><dd>${listaY(nombres)}</dd>
+              </dl>
+            </details>
+            ${pol.length ? `<details class="acordeon__item"><summary>Envíos, cambios y pagos</summary>
+              ${pol.map(([k, t]) => `<p><b>${t}.</b> ${esc(TIENDA.politicas[k])}</p>`).join("")}</details>` : ""}
+          </div>
+        </div>
+      </div>
+      ${relacionados.length ? `
+        <section class="ficha__relacionados" aria-labelledby="relTitulo">
+          <h3 class="ficha__subtitulo" id="relTitulo">También te puede gustar</h3>
+          <ul class="rejilla rejilla--mini">${relacionados.map((x) => tarjeta(x, { mini: true })).join("")}</ul>
+        </section>` : ""}`;
+
+    actualizarPedido();
+    $("#pedidoModelo").value = `${p.nombre} (Ref. ${p.id})`;
+    $("#pedidoTalla").value = sel.talla || ""; // no deja la talla de otro modelo
+    if (ficha.open) {
+      ficha.scrollTop = 0;
+      $("#fichaNombre").focus();
+    } else ficha.showModal();
+  }
+
+  function actualizarPedido() {
+    const { p, talla, color } = sel;
+    $("#fichaPedir").href = talla ? linkWA(msgPedido(p, talla, nombreColor(p.colores[color], color))) : "#";
+  }
+  function elegirTalla(t) {
+    sel.talla = t;
+    $$("[data-ficha-talla]", ficha).forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.fichaTalla) === t)));
+    $("#fichaAviso").textContent = "";
+    $("#pedidoTalla").value = t;
+    actualizarPedido();
+  }
+  function elegirColor(i) {
+    sel.color = i;
+    const { p } = sel;
+    $$("[data-ficha-color]", ficha).forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.fichaColor) === i)));
+    $("#fichaColor").textContent = nombreColor(p.colores[i], i);
+    if (!p.imagen) $("#fichaFoto svg").outerHTML = dibujo(p, false, p.colores[i]);
+    actualizarPedido();
+  }
+  // Sin talla no se arma el pedido: se pide elegirla primero
+  ficha.addEventListener("click", (e) => {
+    if (!(e.target instanceof Element) || !e.target.closest("#fichaPedir") || sel?.talla) return;
     e.preventDefault();
-    const f = new FormData(e.target);
-    const error = $("#cuponError");
+    $("#fichaAviso").textContent = "Elige tu talla para pedir por WhatsApp.";
+    $("[data-ficha-talla]", ficha).focus();
+  });
+
+  /* ---------- Guía de tallas (aproximada, calculada con las tallas del catálogo) ---------- */
+  const guia = $("#guia");
+  const largoPie = (t) => ((t - 2) / 1.5).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const EDADES = [[17, 19, "6 a 12 meses"], [20, 22, "1 a 2 años"], [23, 25, "2 a 3 años"], [26, 28, "3 a 5 años"],
+    [29, 31, "5 a 7 años"], [32, 34, "7 a 9 años"], [35, 38, "9 a 12 años"]];
+  const edad = (t) => (EDADES.find(([a, b]) => t >= a && t <= b) || [])[2] || "12 años o más";
+  function abrirGuia() {
+    const ninos = PRODUCTOS.filter((p) => NINOS.includes(p.categoria));
+    const adultos = PRODUCTOS.filter((p) => !NINOS.includes(p.categoria));
+    const marcada = (ficha.open && sel?.talla) || estado.talla;
+    const fila = (t, conEdad) => `<tr${t === marcada ? ` class="marcada"` : ""}><th scope="row">${t}</th><td>${largoPie(t)} cm</td>${conEdad ? `<td>${edad(t)}</td>` : ""}</tr>`;
+    const tabla = (titulo, lista, conEdad) => {
+      if (!lista.length) return "";
+      const [a, b] = extremos(lista);
+      return `<div class="guia__tabla">
+        <h3 class="guia__subtitulo">${titulo}</h3>
+        <table>
+          <thead><tr><th scope="col">Talla</th><th scope="col">Largo del pie</th>${conEdad ? `<th scope="col">Edad aproximada</th>` : ""}</tr></thead>
+          <tbody>${serie(a, b).map((t) => fila(t, conEdad)).join("")}</tbody>
+        </table></div>`;
+    };
+    $("#guiaCuerpo").innerHTML = `
+      <p class="guia__nota">Medidas aproximadas: cada horma calza distinto. Si quedas entre dos tallas, elige la mayor y pregúntanos por WhatsApp antes de pedir.</p>
+      <div class="guia__tablas">
+        ${tabla(listaY(CATEGORIAS.filter((c) => !NINOS.includes(c.id)).map((c) => c.nombre)), adultos, false)}
+        ${tabla(listaY(CATEGORIAS.filter((c) => NINOS.includes(c.id)).map((c) => c.nombre)), ninos, true)}
+      </div>
+      <h3 class="guia__subtitulo">Cómo medir el pie en casa</h3>
+      <ol class="pasos">
+        <li>Pon una hoja de papel en el piso contra la pared y párate encima, con el talón tocando la pared.</li>
+        <li>Marca en la hoja la punta del dedo más largo y mide en centímetros desde la pared hasta la marca.</li>
+        <li>Mide los dos pies, preferiblemente en la tarde, y busca en la tabla la medida del pie más largo.</li>
+      </ol>`;
+    guia.showModal();
+  }
+
+  /* ---------- WhatsApp flotante: dos intenciones ---------- */
+  const waBoton = $("#waBoton"), waMenu = $("#waMenu");
+  const cerrarWa = (foco) => {
+    waMenu.hidden = true;
+    waBoton.setAttribute("aria-expanded", "false");
+    if (foco) waBoton.focus();
+  };
+  waBoton.addEventListener("click", () => {
+    const abrir = waMenu.hidden;
+    waMenu.hidden = !abrir;
+    waBoton.setAttribute("aria-expanded", String(abrir));
+    if (abrir) $("a", waMenu).focus();
+  });
+  waMenu.addEventListener("click", (e) => { if (e.target.closest("a")) cerrarWa(true); }); // el foco no se pierde en el menú oculto
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !waMenu.hidden) cerrarWa(true); });
+  document.addEventListener("click", (e) => { if (!waMenu.hidden && !e.target.closest("#waFlota")) cerrarWa(false); });
+  $("#waFlota").addEventListener("focusout", (e) => {
+    if (!waMenu.hidden && e.relatedTarget && !$("#waFlota").contains(e.relatedTarget)) cerrarWa(false);
+  });
+
+  /* ---------- Pedido rápido: arma el mensaje y abre WhatsApp ---------- */
+  const formPedido = $("#formPedido");
+  formPedido.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const f = new FormData(formPedido);
+    const error = $("#pedidoError");
     const faltan = ["nombre", "modelo", "talla"].filter((k) => !String(f.get(k) || "").trim());
+    $$("input", formPedido).forEach((i) => i.removeAttribute("aria-invalid"));
     if (faltan.length) {
       const nombres = { nombre: "tu nombre", modelo: "el modelo o la referencia", talla: "la talla" };
-      const lista = faltan.map((k) => nombres[k]);
-      error.textContent = `Falta ${lista.length > 1 ? `${lista.slice(0, -1).join(", ")} y ${lista.at(-1)}` : lista[0]}.`;
+      error.textContent = `Falta ${listaY(faltan.map((k) => nombres[k]))}.`;
       error.hidden = false;
-      e.target.querySelector(`[name="${faltan[0]}"]`).focus();
+      faltan.forEach((k) => $(`[name="${k}"]`, formPedido).setAttribute("aria-invalid", "true"));
+      $(`[name="${faltan[0]}"]`, formPedido).focus();
       return;
     }
-    const tallaCupon = parseInt(f.get("talla"), 10);
-    if (!(tallaCupon >= 15 && tallaCupon <= 46)) {
+    const talla = Number(f.get("talla"));
+    if (!Number.isInteger(talla) || talla < 15 || talla > 46) {
       error.textContent = "Escribe una talla entre 15 y 46.";
       error.hidden = false;
-      e.target.querySelector('[name="talla"]').focus();
+      $('[name="talla"]', formPedido).setAttribute("aria-invalid", "true");
+      $('[name="talla"]', formPedido).focus();
       return;
     }
     error.hidden = true;
-    const texto = `Hola, Calzado Leidy Carolina. Soy ${f.get("nombre").trim()}.\n` +
-      `Quiero pedir: ${f.get("modelo").trim()}\nTalla: ${f.get("talla")}` +
-      (String(f.get("nota")).trim() ? `\nNota: ${f.get("nota").trim()}` : "");
+    const texto = `${SALUDO} Soy ${f.get("nombre").trim()}.\n` +
+      `Quiero pedir: ${f.get("modelo").trim()}\nTalla: ${talla}` +
+      (String(f.get("nota") || "").trim() ? `\nNota: ${f.get("nota").trim()}` : "");
     window.open(linkWA(texto), "_blank", "noopener");
   });
-  $("#formCupon").setAttribute("novalidate", "");
 
-  // En el teléfono las muescas del cupón caen justo en la línea de puntos
-  const cupon = $("#formCupon");
-  const ajustarCorte = () => {
-    const izq = cupon.querySelector(".cupon__izq");
-    cupon.style.setProperty("--corte", `${(izq.offsetHeight / cupon.offsetHeight) * 100}%`);
-  };
-  addEventListener("resize", ajustarCorte);
-  document.fonts?.ready.then(ajustarCorte);
-  ajustarCorte();
-
+  /* ---------- Arranque ---------- */
   pintar();
+  if (hashInicial) requestAnimationFrame(() => $("#catalogo").scrollIntoView());
 })();

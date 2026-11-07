@@ -1,20 +1,18 @@
 # Directory Structure
 
 ```
-index.html              # the whole page (one file, semantic sections)
-css/estilos.css         # all styles; tokens on :root; breakpoints at 1000px and 680px
+index.html              # the whole page (one file, semantic regions + dialogs)
+css/estilos.css         # all styles; tokens on :root; breakpoints 1100px and 760px
 js/productos.js         # DATA ONLY: TIENDA config, CATEGORIAS, PRODUCTOS (80 items)
-js/app.js               # behaviour: render, filters, dialog, coupon, motion (one IIFE)
-assets/                 # downloaded open-licence photos + credits.json (written by assets.mjs)
+js/app.js               # behaviour: render, filters, dialogs, drawer, WhatsApp, order form (one IIFE)
 img/<categoria>/        # (future) real product photos, e.g. img/dama/D01.jpg
 .claude/launch.json     # preview server: python -m http.server 5173
-.taste-skill/           # scratch output of the design inspector (not part of the site)
+.taste-skill/           # scratch output of the design inspector (gitignored)
 ```
 
 ## Rules
 
-- Content the shop owner edits (products, prices, WhatsApp number, social links) lives **only** in `js/productos.js`. `app.js` never hard-codes catalog content.
+- Content the shop owner edits (products, prices, WhatsApp number, social links, contact rows, service and policy copy, announcements) lives **only** in `js/productos.js`.
 - `productos.js` loads before `app.js` (globals `TIENDA`, `CATEGORIAS`, `PRODUCTOS`).
-- No new files for one-off styles or scripts; extend `estilos.css` / `app.js`.
-- Every found picture goes in `assets/` via `assets.mjs --get` so its credit is recorded in `assets/credits.json`, and the credit is printed in the footer "Fotos" column.
-- Identifiers, CSS classes and comments are in Spanish (`etiqueta`, `hoja`, `tirilla`, `cupon`, `pintarLista`), matching the existing code.
+- No stock or third-party photos of places or other brands. Product pictures are the owner's own photos (`imagen`) or the SVG illustrations.
+- Identifiers, CSS classes and comments are in Spanish, matching the existing code.
