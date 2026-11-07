@@ -47,3 +47,24 @@ Se quitaron las fotos de Pitalito y el estilo kraft. Estudio de 9 tiendas (Nike,
 ### Status
 
 [OK] **Completed**
+
+
+## Session 3: Versión dorada
+
+**Date**: 2026-11-07
+**Task**: Versión dorada
+**Branch**: `main`
+
+### Summary
+
+dorado.html: copia de la tienda con paleta negro, dorado y blanco mediante css/tema-dorado.css; comparte datos y código con index.html; contraste AA verificado; spec actualizada con reglas de temas.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d68cf67` | (see git log) |
+
+### Status
+
+[OK] **Completed**
