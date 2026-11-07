@@ -26,3 +26,24 @@ Sitio estático de catálogo (80 modelos, 20 por categoría) con pedido por What
 ### Status
 
 [OK] **Completed**
+
+
+## Session 2: Rediseño profesional con estudio de tiendas
+
+**Date**: 2026-11-07
+**Task**: Rediseño profesional con estudio de tiendas
+**Branch**: `main`
+
+### Summary
+
+Se quitaron las fotos de Pitalito y el estilo kraft. Estudio de 9 tiendas (Nike, Adidas, Skechers, Clarks, Steve Madden, Vélez, Bosi, Bata, Crocs; Spring Step y Payless no cargaron). Rediseño retail: cabecera con categorías, filtros por categoría/tipo/talla/precio, tarjetas, ficha con talla obligatoria y guía de tallas, franja de servicio desde TIENDA, dos intenciones de WhatsApp. trellis-check 10/10, 9 defectos corregidos, spec actualizada.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c48ed0b` | (see git log) |
+
+### Status
+
+[OK] **Completed**
