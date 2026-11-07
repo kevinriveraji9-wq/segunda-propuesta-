@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Check against frontend spec: index"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check against frontend spec: quality-guidelines"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check against frontend spec: component-guidelines"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Check against frontend spec: type-safety"}
+{"file": ".trellis/tasks/11-07-catalogo-web/design.md", "reason": "Art direction and data flow to verify"}

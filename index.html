@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calzado Leidy Carolina · Pitalito, Huila</title>
+  <meta name="description" content="Catálogo de Calzado Leidy Carolina en Pitalito, Huila: 80 modelos para dama, caballero, niño y niña, con precio. Pide tu par por WhatsApp.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rokkitt:wght@800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+  <!-- PORTADA: la etiqueta de la caja -->
+  <header class="portada" id="inicio">
+    <img class="portada__foto" src="assets/parque-principal-pitalito.jpg" width="1900" height="1128"
+         alt="Parque Principal de Pitalito: la torre blanca del reloj, la calle de ladrillo mojada por la lluvia y el letrero Pitalito Bicentenario entre flores rojas.">
+    <div class="etiqueta" id="etiqueta">
+      <h1 class="etiqueta__titulo"><span>Calzado</span> <span>Leidy</span> <span>Carolina</span></h1>
+
+      <dl class="etiqueta__datos">
+        <div><dt>Dónde</dt><dd>Pitalito, Huila</dd></div>
+        <div><dt>Para</dt><dd>Dama, caballero, niño y niña</dd></div>
+        <div><dt>Tallas</dt><dd id="datoTallas">De la 17 a la 44</dd></div>
+        <div><dt>Catálogo</dt><dd id="datoModelos">80 modelos con precio</dd></div>
+      </dl>
+
+      <p class="etiqueta__frase">Estilo y comodidad para toda la familia. Mira el catálogo, elige tu par y pídelo por WhatsApp.</p>
+
+      <div class="etiqueta__pie">
+        <p class="etiqueta__credito">Foto: Parque Principal de Pitalito</p>
+        <a class="boton" href="#catalogo">Ver el catálogo</a>
+        <a class="enlace" data-wa-general target="_blank" rel="noopener">Escribir por WhatsApp</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- CATÁLOGO -->
+    <section class="catalogo" id="catalogo" aria-labelledby="catNombre">
+      <div class="catalogo__in">
+        <div class="mando" id="mando">
+          <h2 class="mando__nombre" id="catNombre"><span id="catTexto">Dama</span><span class="mando__tipo" id="catTipo" aria-hidden="true"></span></h2>
+
+          <div class="pestanas" role="tablist" aria-label="Categorías" id="pestanas"></div>
+
+          <div class="talla">
+            <label for="talla" class="talla__pregunta">¿Qué talla calzas?</label>
+            <div class="talla__fila">
+              <input id="talla" type="number" inputmode="numeric" min="15" max="46" placeholder="Ej. 37" autocomplete="off">
+              <button type="button" class="talla__borrar" id="tallaBorrar" hidden>Ver todas las tallas</button>
+            </div>
+            <p class="talla__resultado" id="tallaResultado" aria-live="polite">Escribe tu talla y te mostramos solo lo que te queda.</p>
+          </div>
+
+          <div class="tipos" id="tipos" role="group" aria-label="Tipo de zapato"></div>
+
+          <label class="buscar">
+            <span class="oculto">Buscar en todo el catálogo</span>
+            <input type="search" id="buscar" placeholder="Buscar por nombre o referencia" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="hoja" id="hoja" role="tabpanel" aria-labelledby="hojaTitulo">
+          <div class="hoja__cabeza">
+            <h3 class="hoja__titulo" id="hojaTitulo">Catálogo de dama</h3>
+            <p class="hoja__nota" id="hojaNota"></p>
+          </div>
+          <div id="lista"></div>
+          <p class="hoja__cierre">Precios en pesos colombianos, sujetos a disponibilidad.<br>Pregunta por tu talla y color antes de pagar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- EL VALLE -->
+    <section class="valle" aria-label="Pitalito">
+      <img class="valle__foto" src="assets/el-valle-de-laboyos-pitalito-huila-colombia.jpg" width="1920" height="1434" loading="lazy"
+           alt="El Valle de Laboyos visto desde una loma con cafetales: potreros verdes, árboles sueltos y las montañas al fondo bajo un cielo con nubes.">
+      <div class="valle__nota">
+        <p>Calzamos a Pitalito y al Valle de Laboyos: zapatos para la escuela, el trabajo, la fiesta y el domingo.</p>
+        <p class="valle__credito">El Valle de Laboyos, Pitalito. Foto: Dhg94, CC BY-SA 4.0</p>
+      </div>
+    </section>
+
+    <!-- CÓMO PEDIR -->
+    <section class="pedir" id="como-pedir" aria-labelledby="pedirTitulo">
+      <div class="pedir__in">
+        <div class="pedir__texto">
+          <h2 id="pedirTitulo">Pedir es un chat</h2>
+          <p>No hay carrito ni registro. Eliges el modelo, nos escribes y lo cuadramos por WhatsApp, como siempre se ha hecho en la tienda.</p>
+          <div class="laminas">
+            <figure>
+              <img src="assets/shoemaker-s-workshop-in-the-bathory-museum.jpg" width="1920" height="1598" loading="lazy"
+                   alt="Taller de zapatero reconstruido en un museo: hormas de madera colgadas, botas de cuero, un banco y un letrero antiguo con un zapato de tacón y una bota.">
+              <figcaption>Taller de zapatero en el Museo Báthory, Nyírbátor (Hungría). Foto: Szilas, CC BY-SA 4.0</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/romanian-plate-depicting-shoemaker-s-workshop-1760.jpg" width="1920" height="1669" loading="lazy"
+                   alt="Plato de peltre grabado en 1760 con dos zapateros trabajando frente a una mesa, con botas en la repisa del fondo.">
+              <figcaption>Plato de peltre con dos zapateros, 1760. Bata Shoe Museum. Foto: Daderot, CC0</figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <div class="tirilla" role="group" aria-label="Pasos para pedir">
+          <p class="tirilla__cabeza">Calzado Leidy Carolina<br>Pedido por WhatsApp</p>
+          <h3>En la página</h3>
+          <ul>
+            <li><span>Eliges el modelo</span><i></i><b>Ref. D01</b></li>
+            <li><span>Tocas “Pedir por WhatsApp”</span><i></i><b>1 toque</b></li>
+          </ul>
+          <h3>En el chat</h3>
+          <ul>
+            <li><span>Te confirmamos talla y color</span><i></i><b>al momento</b></li>
+            <li><span>Acordamos pago y entrega</span><i></i><b>contigo</b></li>
+          </ul>
+          <h3>La entrega</h3>
+          <ul>
+            <li><span>Recoges en la tienda</span><i></i><b>Pitalito</b></li>
+            <li><span>O te lo enviamos</span><i></i><b>a convenir</b></li>
+          </ul>
+          <p class="tirilla__total"><span>Tu par, en tu talla</span><b>listo</b></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CUPÓN -->
+    <section class="cupon-zona" id="cupon" aria-labelledby="cuponTitulo">
+      <img class="cupon-zona__foto" src="assets/amanecer-en-pitalito-huila.jpg" width="1920" height="1440" loading="lazy"
+           alt="Amanecer en Pitalito: nubes encendidas de rojo y naranja sobre la silueta oscura de los árboles.">
+      <form class="cupon" id="formCupon">
+        <div class="cupon__izq">
+          <h2 id="cuponTitulo">Pide tu par</h2>
+          <p>Llena el cupón y se abre WhatsApp con tu pedido ya escrito. Solo tienes que enviarlo.</p>
+        </div>
+        <div class="cupon__der">
+          <label><span class="oculto">Tu nombre</span><input name="nombre" placeholder="Tu nombre" autocomplete="name" required></label>
+          <label><span class="oculto">Modelo o referencia</span><input name="modelo" id="cuponModelo" placeholder="Modelo o referencia (ej. D01)" required></label>
+          <label><span class="oculto">Talla</span><input name="talla" id="cuponTalla" type="number" inputmode="numeric" min="15" max="46" placeholder="Talla" required></label>
+          <label><span class="oculto">Color o comentario</span><input name="nota" placeholder="Color o comentario (opcional)"></label>
+          <button type="submit" class="cupon__enviar">Enviar por WhatsApp</button>
+          <p class="cupon__error" id="cuponError" role="alert" hidden></p>
+        </div>
+      </form>
+      <p class="cupon-zona__credito">Amanecer en Pitalito, Huila. Foto: Eduin1221, CC BY-SA 4.0</p>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p class="pie__marca" aria-hidden="true">Leidy Carolina</p>
+    <div class="pie__fila">
+      <ul class="pie__lugares">
+        <li><a href="https://www.google.com/maps/search/?api=1&amp;query=Calzado%20Leidy%20Carolina%20Pitalito" target="_blank" rel="noopener">Pitalito, Huila</a></li>
+        <li><a data-wa-general target="_blank" rel="noopener">WhatsApp</a></li>
+        <li><a id="lnkInstagram" target="_blank" rel="noopener">Instagram</a></li>
+        <li><a id="lnkTiktok" target="_blank" rel="noopener">TikTok</a></li>
+        <li><a id="lnkFacebook" target="_blank" rel="noopener">Facebook</a></li>
+      </ul>
+      <div class="pie__cols">
+        <div>
+          <h2>Catálogo</h2>
+          <ul>
+            <li><a href="#catalogo" data-ir="dama">Dama</a></li>
+            <li><a href="#catalogo" data-ir="caballero">Caballero</a></li>
+            <li><a href="#catalogo" data-ir="nino">Niño</a></li>
+            <li><a href="#catalogo" data-ir="nina">Niña</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Comprar</h2>
+          <ul>
+            <li><a href="#como-pedir">Cómo pedir</a></li>
+            <li><a href="#cupon">Cupón de pedido</a></li>
+          </ul>
+        </div>
+        <div class="pie__creditos">
+          <h2>Fotos</h2>
+          <ul>
+            <li><a href="https://commons.wikimedia.org/w/index.php?curid=128107814" target="_blank" rel="noopener">Parque Principal Pitalito</a>, Daalecura, CC BY-SA 4.0</li>
+            <li><a href="https://commons.wikimedia.org/w/index.php?curid=36018869" target="_blank" rel="noopener">El Valle de Laboyos</a>, Dhg94, CC BY-SA 4.0</li>
+            <li><a href="https://commons.wikimedia.org/w/index.php?curid=45700578" target="_blank" rel="noopener">Amanecer en Pitalito</a>, Eduin1221, CC BY-SA 4.0</li>
+            <li><a href="https://commons.wikimedia.org/w/index.php?curid=107156066" target="_blank" rel="noopener">Taller de zapatero, Museo Báthory</a>, Szilas, CC BY-SA 4.0</li>
+            <li><a href="https://commons.wikimedia.org/w/index.php?curid=30473630" target="_blank" rel="noopener">Plato de peltre, 1760</a>, Daderot, CC0</li>
+            <li>Todo vía Wikimedia Commons. Los zapatos son ilustraciones.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="pie__legal">
+      <p>© <span id="anio">2026</span> Calzado Leidy Carolina. Precios sujetos a cambio y disponibilidad.</p>
+      <a href="#inicio">Volver arriba</a>
+    </div>
+  </footer>
+
+  <a class="wa-flota" data-wa-general target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.4-.3z"/></svg>
+  </a>
+
+  <dialog class="ficha" id="ficha" aria-labelledby="fichaNombre">
+    <button class="ficha__cerrar" id="fichaCerrar" aria-label="Cerrar">Cerrar</button>
+    <div id="fichaContenido"></div>
+  </dialog>
+
+  <script src="js/productos.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

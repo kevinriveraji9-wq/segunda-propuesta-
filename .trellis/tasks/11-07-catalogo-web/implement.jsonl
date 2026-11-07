@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Project frontend convention: index"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Project frontend convention: directory-structure"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Project frontend convention: component-guidelines"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Project frontend convention: state-management"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Project frontend convention: type-safety"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Project frontend convention: quality-guidelines"}
