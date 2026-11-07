@@ -37,3 +37,9 @@ Never publish unconfirmed specifics: shipping thresholds or prices, "a todo Colo
 ## Testing
 
 No test runner. Manual or scripted browser checks at 1440 / 768 / 390 for the flows listed in the index Quality Check.
+
+## Theme variants
+
+- `dorado.html` is `index.html` plus `css/tema-dorado.css` (black / gold / white). Any change to `index.html` must be copied to `dorado.html` (only differences: the extra stylesheet link, the title suffix "· Versión dorada" and `theme-color`).
+- Themes override tokens only (`--tinta`, `--acento`, `--wa`, `--wa-hondo`, `--pie-texto`) plus the few rules where a surface flips to dark (aviso, cabecera, portada, servicios, pie) or text must turn black on gold (`.boton--wa`, `.boton-wa`, `.sello`, `.wa-flota__boton`). Never change layout in a theme file.
+- Gold text on white uses `--oro-hondo` (6.9:1); bright `--oro` only on black or as a background with black text.
